@@ -3,73 +3,120 @@ name = "componentize-py"
 version = "0.17.2"
 edition = "2021"
 exclude = ["cpython"]
+rust-version = "1.82"
 
 [lib]
 name = "componentize_py"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-anyhow = { version = "1.0.91", features = ["backtrace"] }
-clap = { version = "4.5.20", features = ["derive"] }
-tar = "0.4.42"
-tempfile = "3.13.0"
-zstd = "0.13.2"
-componentize-py-shared = { path = "shared" }
-wasm-encoder = "0.235.0"
-wit-parser = "0.235.0"
-wit-component = "0.235.0"
-wasmparser = "0.235.0"
-indexmap = "2.6.0"
-bincode = "1.3.3"
-heck = "0.5.0"
-# TODO: switch back to upstream once we've updated to Python 3.14, at which
-# point the following patch will no longer be needed:
-pyo3 = { git = "https://github.com/dicej/pyo3", branch = "v0.25.0-no-wasm32-unwind", features = [
-    "abi3-py39",
+anyhow = { workspace = true, features = ["backtrace"] }
+async-trait = { workspace = true }
+bincode = { workspace = true }
+bytes = { workspace = true }
+cap-std = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+component-init-transform = { workspace = true }
+componentize-py-shared = { workspace = true }
+futures = { workspace = true }
+heck = { workspace = true }
+im-rc = { workspace = true }
+indexmap = { workspace = true }
+once_cell = { workspace = true }
+pretty_env_logger = { workspace = true }
+pyo3 = { workspace = true, features = [
+    "abi3-py314",
     "extension-module",
 ], optional = true }
-wasmtime = "34.0.1"
-wasmtime-wasi = "34.0.1"
-once_cell = "1.20.2"
-component-init-transform = "0.1"
-async-trait = "0.1.83"
-futures = "0.3.31"
-tokio = { version = "1.41.0", features = [
+semver = { workspace = true }
+serde = { version = "1.0.226", features = ["derive"] }
+tar = { workspace = true }
+tempfile = { workspace = true }
+tokio = { version = "1.47.1", features = [
     "macros",
     "rt",
     "rt-multi-thread",
     "fs",
 ] }
-bytes = "1.8.0"
-pretty_env_logger = "0.5.0"
-cap-std = "3.3.0"
-im-rc = "15.1.0"
-serde = { version = "1.0.213", features = ["derive"] }
-toml = "0.8.19"
-semver = "1.0.23"
+toml = { workspace = true }
+wasm-encoder = { workspace = true }
+wasmparser = { workspace = true }
+wasmtime = { workspace = true }
+wasmtime-wasi = { workspace = true }
+wasmtime-wasi-http = { workspace = true }
+wasmtime-wasi-io = { workspace = true }
+wit-component = { workspace = true }
+wit-parser = { workspace = true }
+zstd = { workspace = true }
 
 [dev-dependencies]
-assert_cmd = "2.0.16"
-flate2 = "1.1.1"
-fs_extra = "1.3.0"
-hex = "0.4.3"
-predicates = "3.1.2"
-proptest = "1.5.0"
-reqwest = { version = "0.12.15", features = [
+assert_cmd = { workspace = true }
+flate2 = { workspace = true }
+fs_extra = { workspace = true }
+hex = { workspace = true }
+predicates = { workspace = true }
+proptest = { workspace = true }
+reqwest = { workspace = true, features = [
     "blocking",
     "brotli",
     "deflate",
     "gzip",
     "zstd",
 ] }
-tar = "0.4.42"
-tempfile = "3.13.0"
+tar = { workspace = true }
+tempfile = { workspace = true }
 
 [build-dependencies]
-anyhow = "1.0.89"
-tar = "0.4.41"
-zstd = "0.13.2"
+anyhow = { workspace = true }
+tar = { workspace = true }
+zstd = { workspace = true }
 test-generator = { path = "test-generator" }
 
 [workspace]
 members = ["runtime", "shared", "test-generator"]
+
+[workspace.dependencies]
+anyhow = "1.0.100"
+assert_cmd = "2.0.17"
+async-trait = "0.1.89"
+bincode = "1.3.3"
+bytes = "1.10.1"
+cap-std = "3.4.4"
+clap = "4.5.48"
+component-init-transform = "0.1"
+componentize-py-shared = { path = "shared" }
+flate2 = "1.1.2"
+fs_extra = "1.3.0"
+futures = "0.3.31"
+getrandom = "0.3.3"
+heck = "0.5.0"
+hex = "0.4.3"
+im-rc = "15.1.0"
+indexmap = "2.11.4"
+num-bigint = "0.4.6"
+once_cell = "1.21.3"
+predicates = "3.1.3"
+pretty_env_logger = "0.5.0"
+proptest = "1.8.0"
+# TODO: Wait for the PR to be merged: https://github.com/PyO3/pyo3/pull/5368
+# NOTE: Add support for `wasip2` target
+# SRC: https://github.com/crepererum/pyo3/tree/crepererum/wasip2-compilation-fix
+pyo3 = { git = "https://github.com/crepererum/pyo3.git", rev = "c68b395c0a11dbe211b4eabaed2947e9870a74bf" }
+reqwest = { version = "0.12.23" }
+semver = "1.0.27"
+serde = "1.0.226"
+tar = "0.4.44"
+tempfile = "3.23.0"
+tokio = "1.47.1"
+toml = "0.9.7"
+wasm-encoder = "0.239.0"
+wasmparser = "0.239.0"
+wasmtime = "37.0.1"
+wasmtime-wasi = "37.0.1"
+wasmtime-wasi-http = "37.0.1"
+wasmtime-wasi-io = "37.0.1"
+wit-bindgen = { version = "0.46.0", default-features = false }
+wit-bindgen-rt = "0.44.0"
+wit-component = "0.239.0"
+wit-parser = "0.239.0"
+zstd = "0.13.3"

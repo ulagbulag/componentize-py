@@ -14,8 +14,8 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
-  WASI_SDK_VERSION: 20.46gf3a1f8991535
-  WASI_SDK_RELEASE: wasi-sockets-alpha-5
+  WASI_SDK_VERSION: "27.0"
+  WASI_SDK_RELEASE: wasi-sdk-27
 
 jobs:
   linux:
@@ -29,22 +29,18 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: Install latest Rust nightly toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
-          targets: wasm32-wasip1 wasm32-unknown-unknown
+          targets: wasm32-wasip2
 
       - name: Install latest Rust stable toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: wasm32-wasip1 wasm32-unknown-unknown
+          targets: wasm32-wasip2
           components: clippy, rustfmt
-
-      - name: Install Rust std source
-        shell: bash
-        run: rustup component add rust-src --toolchain nightly
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -55,9 +51,9 @@ jobs:
         shell: bash
         run: |
           cd /tmp
-          curl -LO https://github.com/dicej/wasi-sdk/releases/download/${WASI_SDK_RELEASE}/wasi-sdk-${WASI_SDK_VERSION}-linux.tar.gz
-          tar xf wasi-sdk-${WASI_SDK_VERSION}-linux.tar.gz
-          mv wasi-sdk-${WASI_SDK_VERSION} /opt/wasi-sdk
+          curl -LO "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_SDK_VERSION}/wasi-sdk-${WASI_SDK_VERSION}-$(uname -m)-linux.tar.gz"
+          tar xf "wasi-sdk-${WASI_SDK_VERSION}-$(uname -m)-linux.tar.gz"
+          mv "wasi-sdk-${WASI_SDK_VERSION}-$(uname -m)-linux" /opt/wasi-sdk
 
       - name: Cache CPython
         id: cache-cpython-wasi
@@ -91,17 +87,13 @@ jobs:
       - name: Install latest Rust nightly toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
-          targets: wasm32-wasip1 wasm32-unknown-unknown
+          targets: wasm32-wasip2
 
       - name: Install latest Rust stable toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: wasm32-wasip1 wasm32-unknown-unknown
+          targets: wasm32-wasip2
           components: clippy, rustfmt
-
-      - name: Install Rust std source
-        shell: bash
-        run: rustup component add rust-src --toolchain nightly
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -112,7 +104,7 @@ jobs:
         shell: bash
         run: |
           cd /tmp
-          curl -LO https://github.com/dicej/wasi-sdk/releases/download/${WASI_SDK_RELEASE}/wasi-sdk-${WASI_SDK_VERSION}-${{ matrix.config.wasiSDK }}.tar.gz
+          curl -LO https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_SDK_VERSION}/wasi-sdk-${WASI_SDK_VERSION}-${{ matrix.config.wasiSDK }}.tar.gz
           tar xf wasi-sdk-${WASI_SDK_VERSION}-${{ matrix.config.wasiSDK }}.tar.gz
 
       - name: Install WASI-SDK
@@ -143,7 +135,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: Test
         shell: bash

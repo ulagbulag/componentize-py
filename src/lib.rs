@@ -22,12 +22,11 @@ use {
         Config, Engine, Store,
     },
     wasmtime_wasi::{
-        p2::{
-            pipe::{MemoryInputPipe, MemoryOutputPipe},
-            IoView, WasiCtx, WasiCtxBuilder, WasiView,
-        },
-        DirPerms, FilePerms,
+        p2::pipe::{MemoryInputPipe, MemoryOutputPipe},
+        DirPerms, FilePerms, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView,
     },
+    wasmtime_wasi_http::{WasiHttpCtx, WasiHttpView},
+    wasmtime_wasi_io::IoView,
     wit_parser::{Resolve, TypeDefKind, UnresolvedPackageGroup, WorldId, WorldItem, WorldKey},
 };
 
@@ -53,30 +52,49 @@ static DEFAULT_WORLD_MODULE: &str = "wit_world";
 wasmtime::component::bindgen!({
     path: "wit",
     world: "init",
-    async: true
+    exports: {
+        default: async,
+    },
+    imports: {
+        default: async,
+    },
 });
 
 pub struct Ctx {
+    http: WasiHttpCtx,
     wasi: WasiCtx,
     table: ResourceTable,
-}
-
-pub struct Library {
-    name: String,
-    module: Vec<u8>,
-    dl_openable: bool,
-}
-
-impl WasiView for Ctx {
-    fn ctx(&mut self) -> &mut WasiCtx {
-        &mut self.wasi
-    }
 }
 
 impl IoView for Ctx {
     fn table(&mut self) -> &mut ResourceTable {
         &mut self.table
     }
+}
+
+impl WasiHttpView for Ctx {
+    fn ctx(&mut self) -> &mut WasiHttpCtx {
+        &mut self.http
+    }
+
+    fn table(&mut self) -> &mut ResourceTable {
+        &mut self.table
+    }
+}
+
+impl WasiView for Ctx {
+    fn ctx(&mut self) -> WasiCtxView<'_> {
+        WasiCtxView {
+            ctx: &mut self.wasi,
+            table: &mut self.table,
+        }
+    }
+}
+
+pub struct Library {
+    name: String,
+    module: Vec<u8>,
+    dl_openable: bool,
 }
 
 #[derive(Deserialize)]
@@ -493,6 +511,7 @@ pub async fn componentize(
         .join(":");
 
     let table = ResourceTable::new();
+    let http = WasiHttpCtx::new();
     let wasi = wasi
         .env(
             "PYTHONPATH",
@@ -514,7 +533,7 @@ pub async fn componentize(
         false
     };
 
-    let mut store = Store::new(&engine, Ctx { wasi, table });
+    let mut store = Store::new(&engine, Ctx { http, wasi, table });
 
     let app_name = app_name.to_owned();
     let component = component_init_transform::initialize_staged(
@@ -585,19 +604,19 @@ fn parse_wit(
         }
     }
 
-    let mut last_pkg = None;
-    for path in paths.iter().map(AsRef::as_ref) {
-        let pkg = if path.is_dir() {
-            resolve.push_dir(path)?.0
-        } else {
-            let pkg = UnresolvedPackageGroup::parse_file(path)?;
-            resolve.push_group(pkg)?
-        };
-        last_pkg = Some(pkg);
-    }
-
-    let pkg = last_pkg.unwrap(); // The paths should not be empty
-    let world = resolve.select_world(pkg, world)?;
+    let pkgs = paths
+        .iter()
+        .map(AsRef::as_ref)
+        .map(|path| {
+            if path.is_dir() {
+                Ok(resolve.push_dir(path)?.0)
+            } else {
+                let pkg = UnresolvedPackageGroup::parse_file(path)?;
+                resolve.push_group(pkg)
+            }
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let world = resolve.select_world(&pkgs, world)?;
     Ok((resolve, world))
 }
 
@@ -607,6 +626,7 @@ fn add_wasi_and_stubs(
     linker: &mut Linker<Ctx>,
 ) -> Result<()> {
     wasmtime_wasi::p2::add_to_linker_async(linker)?;
+    wasmtime_wasi_http::add_only_http_to_linker_async(linker)?;
 
     enum Stub<'a> {
         Function(&'a String),

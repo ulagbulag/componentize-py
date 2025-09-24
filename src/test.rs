@@ -14,7 +14,8 @@ use {
         component::{Component, InstancePre, Linker, ResourceTable},
         Config, Engine, Store,
     },
-    wasmtime_wasi::p2::{WasiCtx, WasiCtxBuilder},
+    wasmtime_wasi::{WasiCtx, WasiCtxBuilder},
+    wasmtime_wasi_http::WasiHttpCtx,
 };
 
 mod echoes;
@@ -178,6 +179,7 @@ impl<H: Host> Tester<H> {
             Store::new(
                 &ENGINE,
                 Ctx {
+                    http: WasiHttpCtx::new(),
                     wasi,
                     table: ResourceTable::new(),
                 },
@@ -208,12 +210,13 @@ impl<H: Host> Tester<H> {
         Ok(runner.run(strategy, move |v| {
             let mut store = runtime.block_on(async {
                 let table = ResourceTable::new();
+                let http = WasiHttpCtx::new();
                 let wasi = WasiCtxBuilder::new()
                     .inherit_stdout()
                     .inherit_stderr()
                     .build();
 
-                Store::new(&ENGINE, Ctx { wasi, table })
+                Store::new(&ENGINE, Ctx { http, wasi, table })
             });
 
             let world = runtime

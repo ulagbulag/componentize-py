@@ -9,17 +9,19 @@ use {
         component::{HasSelf, InstancePre, Linker, Resource, ResourceAny},
         Store,
     },
-    wasmtime_wasi::{
-        p2::{IoView, WasiCtxBuilder},
-        DirPerms, FilePerms,
-    },
+    wasmtime_wasi::{DirPerms, FilePerms, WasiCtxBuilder},
+    wasmtime_wasi_io::IoView,
 };
 
 wasmtime::component::bindgen!({
     path: "src/test/wit",
     world: "tests",
-    async: true,
-    trappable_imports: true,
+    exports: {
+        default: async,
+    },
+    imports: {
+        default: async | trappable,
+    },
     with: {
         "componentize-py:test/resource-import-and-export/thing": ThingU32,
         "componentize-py:test/resource-borrow-import/thing": ThingU32,
@@ -36,10 +38,12 @@ mod foo_sdk {
     wasmtime::component::bindgen!({
         path: "src/test/foo_sdk/wit",
         world: "foo-world",
-        async: {
-            only_imports: [],
+        exports: {
+            default: async,
         },
-        trappable_imports: true,
+        imports: {
+            default: trappable,
+        },
     });
 }
 
@@ -47,7 +51,12 @@ mod bar_sdk {
     wasmtime::component::bindgen!({
         path: "src/test/bar_sdk/wit",
         world: "bar-world",
-        async: true,
+        exports: {
+            default: async,
+        },
+        imports: {
+            default: async,
+        },
         with: {
             "foo:sdk/foo-interface": super::foo_sdk::foo::sdk::foo_interface,
         },
@@ -97,6 +106,7 @@ impl super::Host for Host {
 
     fn add_to_linker(linker: &mut Linker<Ctx>) -> Result<()> {
         wasmtime_wasi::p2::add_to_linker_async(linker)?;
+        wasmtime_wasi_http::add_only_http_to_linker_async(linker)?;
         Tests::add_to_linker::<_, HasSelf<_>>(linker, |ctx| ctx)?;
         foo_sdk::FooWorld::add_to_linker::<_, HasSelf<_>>(linker, |ctx| ctx)?;
         Ok(())

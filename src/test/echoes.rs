@@ -12,8 +12,12 @@ use {
 wasmtime::component::bindgen!({
     path: "src/test/wit",
     world: "echoes-test",
-    async: true,
-    trappable_imports: true,
+    exports: {
+        default: async,
+    },
+    imports: {
+        default: async | trappable,
+    },
 });
 
 impl componentize_py::test::echoes::Host for Ctx {
@@ -190,6 +194,7 @@ impl super::Host for Host {
 
     fn add_to_linker(linker: &mut Linker<Ctx>) -> Result<()> {
         wasmtime_wasi::p2::add_to_linker_async(&mut *linker)?;
+        wasmtime_wasi_http::add_only_http_to_linker_async(linker)?;
         componentize_py::test::echoes::add_to_linker::<_, HasSelf<_>>(linker, |ctx| ctx)?;
         Ok(())
     }

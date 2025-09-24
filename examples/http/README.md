@@ -9,15 +9,15 @@ run a Python-based component targetting the [wasi-http] `proxy` world.
 
 ## Prerequisites
 
-* `Wasmtime` 26.0.0 or later
-* `componentize-py` 0.17.2
+- `Wasmtime` 37.0.0 or later
+- `componentize-py` 0.17.2
 
-Below, we use [Rust](https://rustup.rs/)'s `cargo` to install `Wasmtime`.  If
+Below, we use [Rust](https://rustup.rs/)'s `cargo` to install `Wasmtime`. If
 you don't have `cargo`, you can download and install from
-https://github.com/bytecodealliance/wasmtime/releases/tag/v26.0.0.
+https://github.com/bytecodealliance/wasmtime/releases/tag/v37.0.0.
 
 ```
-cargo install --version 26.0.0 wasmtime-cli
+cargo install --version 37.0.0 wasmtime-cli
 pip install componentize-py==0.17.2
 ```
 
@@ -26,7 +26,7 @@ pip install componentize-py==0.17.2
 First, build the app and run it:
 
 ```
-componentize-py -d ../../wit -w wasi:http/proxy@0.2.0 componentize app -o http.wasm
+componentize-py -d ../../wit -w wasi:http/proxy@0.2.6 componentize app -o http.wasm
 wasmtime serve -Scli http.wasm
 ```
 
@@ -45,7 +45,7 @@ The above should echo the request body in the response.
 
 In addition to the `/echo` endpoint, the app supports a `/hash-all` endpoint
 which concurrently downloads one or more URLs and streams the SHA-256 hashes of
-their contents.  You can test it with e.g.:
+their contents. You can test it with e.g.:
 
 ```
 curl -i \

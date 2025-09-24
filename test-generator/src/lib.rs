@@ -546,7 +546,7 @@ pub fn generate() -> Result<()> {
         hex::decode(seed)?
     } else {
         let mut seed = vec![0u8; 32];
-        getrandom::getrandom(&mut seed)?;
+        getrandom::fill(&mut seed)?;
         seed
     };
 
@@ -810,8 +810,12 @@ use {{
 wasmtime::component::bindgen!({{
     path: {wit_path:?},
     world: "echoes-generated-test",
-    async: true,
-    trappable_imports: true,
+    exports: {{
+        default: async,
+    }},
+    imports: {{
+        default: async | trappable,
+    }},
 }});
 
 pub struct Exports {{
@@ -829,6 +833,7 @@ impl super::Host for Host {{
 
     fn add_to_linker(linker: &mut Linker<Ctx>) -> Result<()> {{
         wasmtime_wasi::p2::add_to_linker_async(&mut *linker)?;
+        wasmtime_wasi_http::add_only_http_to_linker_async(&mut *linker)?;
         {PREFIX}::add_to_linker::<_, HasSelf<_>>(linker, |ctx| ctx)?;
         Ok(())
     }}

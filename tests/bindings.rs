@@ -19,7 +19,7 @@ fn lint_cli_bindings() -> anyhow::Result<()> {
     )?;
     let path = dir.path().join("cli");
 
-    generate_bindings(&path, "wasi:cli/command@0.2.0")?;
+    generate_bindings(&path, "wasi:cli/command@0.2.6")?;
 
     assert!(predicate::path::is_dir().eval(&path.join("wit_world")));
 
@@ -38,7 +38,7 @@ fn lint_http_bindings() -> anyhow::Result<()> {
     )?;
     let path = dir.path().join("http");
 
-    generate_bindings(&path, "wasi:http/proxy@0.2.0")?;
+    generate_bindings(&path, "wasi:http/proxy@0.2.6")?;
 
     assert!(predicate::path::is_dir().eval(&path.join("wit_world")));
 
@@ -120,7 +120,7 @@ fn lint_tcp_bindings() -> anyhow::Result<()> {
     )?;
     let path = dir.path().join("tcp");
 
-    generate_bindings(&path, "wasi:cli/command@0.2.0")?;
+    generate_bindings(&path, "wasi:cli/command@0.2.6")?;
 
     assert!(predicate::path::is_dir().eval(&path.join("wit_world")));
 

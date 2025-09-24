@@ -1,7 +1,7 @@
 # Example: `matrix-math`
 
 This is an example of how to use [componentize-py] to build a CLI app that does
-matrix multiplication using [NumPy] inside a sandboxed environment.  This
+matrix multiplication using [NumPy] inside a sandboxed environment. This
 demonstrates using a non-trivial Python package containing native extensions
 within a guest component.
 
@@ -10,19 +10,19 @@ within a guest component.
 
 ## Prerequisites
 
-* `wasmtime` 26.0.0 or later
-* `componentize-py` 0.17.2
-* `NumPy`, built for WASI
+- `wasmtime` 37.0.0 or later
+- `componentize-py` 0.17.2
+- `NumPy`, built for WASI
 
 Note that we use an unofficial build of NumPy since the upstream project does
 not yet publish WASI builds.
 
-Below, we use [Rust](https://rustup.rs/)'s `cargo` to install `Wasmtime`.  If
+Below, we use [Rust](https://rustup.rs/)'s `cargo` to install `Wasmtime`. If
 you don't have `cargo`, you can download and install from
-https://github.com/bytecodealliance/wasmtime/releases/tag/v26.0.0.
+https://github.com/bytecodealliance/wasmtime/releases/tag/v37.0.0.
 
 ```
-cargo install --version 26.0.0 wasmtime-cli
+cargo install --version 37.0.0 wasmtime-cli
 pip install componentize-py==0.17.2
 curl -OL https://github.com/dicej/wasi-wheels/releases/download/v0.0.1/numpy-wasi.tar.gz
 tar xf numpy-wasi.tar.gz

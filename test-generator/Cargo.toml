@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.91"
-getrandom = { version = "0.2.15", features = ['std'] }
-hex = "0.4.3"
-proptest = "1.5.0"
+anyhow = { workspace = true }
+getrandom = { workspace = true, features = ['std'] }
+hex = { workspace = true }
+proptest = { workspace = true }
