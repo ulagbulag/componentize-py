@@ -26,7 +26,7 @@ pub struct Options {
 pub struct Common {
     /// File or directory containing WIT document(s)
     #[arg(short = 'd', long)]
-    pub wit_path: Option<PathBuf>,
+    pub wit_path: Vec<PathBuf>,
 
     /// Name of world to target (or default world if `None`)
     #[arg(short = 'w', long)]
@@ -151,9 +151,7 @@ pub fn run<T: Into<OsString> + Clone, I: IntoIterator<Item = T>>(args: I) -> Res
 
 fn generate_bindings(common: Common, bindings: Bindings) -> Result<()> {
     crate::generate_bindings(
-        &common
-            .wit_path
-            .unwrap_or_else(|| Path::new("wit").to_owned()),
+        &common.wit_path,
         common.world.as_deref(),
         &common.features,
         common.all_features,
@@ -185,7 +183,7 @@ fn componentize(common: Common, componentize: Componentize) -> Result<()> {
     }
 
     Runtime::new()?.block_on(crate::componentize(
-        common.wit_path.as_deref(),
+        &common.wit_path,
         common.world.as_deref(),
         &common.features,
         common.all_features,
@@ -338,7 +336,7 @@ mod tests {
 
         // When generating the bindings for this WIT world
         let common = Common {
-            wit_path: Some(wit.path().into()),
+            wit_path: vec![wit.path().into()],
             world: None,
             world_module: Some("bindings".into()),
             quiet: false,
@@ -368,7 +366,7 @@ mod tests {
 
         // When generating the bindings for this WIT world
         let common = Common {
-            wit_path: Some(wit.path().into()),
+            wit_path: vec![wit.path().into()],
             world: None,
             world_module: Some("bindings".into()),
             quiet: false,
@@ -398,7 +396,7 @@ mod tests {
 
         // When generating the bindings for this WIT world
         let common = Common {
-            wit_path: Some(wit.path().into()),
+            wit_path: vec![wit.path().into()],
             world: None,
             world_module: Some("bindings".into()),
             quiet: false,
@@ -426,7 +424,7 @@ mod tests {
         let wit = gated_x_wit_file()?;
         let out_dir = tempfile::tempdir()?;
         let common = Common {
-            wit_path: Some(wit.path().into()),
+            wit_path: vec![wit.path().into()],
             world: None,
             world_module: Some("bindings".into()),
             quiet: false,
