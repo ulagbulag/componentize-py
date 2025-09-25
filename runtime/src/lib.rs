@@ -5,10 +5,6 @@
 )]
 #![allow(static_mut_refs, reason = "wit-bindgen produces code that does this")]
 #![allow(unknown_lints)]
-#![allow(
-    unnecessary_transmutes,
-    reason = "nightly warning but not supported on stable"
-)]
 
 use {
     anyhow::{Error, Result},

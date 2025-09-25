@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{bail, Error};
+use anyhow::{Error, bail};
 use wasm_encoder::{
     CodeSection, ExportKind, ExportSection, Function, FunctionSection, Instruction as Ins, Module,
     TypeSection,
@@ -11,9 +11,13 @@ use crate::Library;
 
 type LinkedStubModules = Option<(Vec<u8>, Box<dyn Fn(u32) -> u32>)>;
 
-pub fn link_stub_modules(libraries: Vec<Library>) -> Result<LinkedStubModules, Error> {
+pub fn link_stub_modules(
+    libraries: Vec<Library>,
+    stack_size: u32,
+) -> Result<LinkedStubModules, Error> {
     let mut wasi_imports = HashMap::new();
     let mut linker = wit_component::Linker::default()
+        .stack_size(stack_size)
         .validate(true)
         .use_built_in_libdl(true);
 

@@ -8,7 +8,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result, anyhow, bail};
 use indexmap::IndexMap;
 use tar::Archive;
 use tempfile::TempDir;
@@ -60,10 +60,10 @@ pub fn bundle_libraries(library_path: Vec<(&str, Vec<PathBuf>)>) -> Result<Vec<L
             dl_openable: false,
         },
         Library {
-            name: "libpython3.14.so".into(),
+            name: "libpython3.15.so".into(),
             module: zstd::decode_all(Cursor::new(include_bytes!(concat!(
                 env!("OUT_DIR"),
-                "/libpython3.14.so.zst"
+                "/libpython3.15.so.zst"
             ))))?,
             dl_openable: false,
         },

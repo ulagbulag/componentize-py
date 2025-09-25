@@ -1,7 +1,7 @@
 #![deny(warnings)]
 
 use {
-    anyhow::{anyhow, bail, Context, Result},
+    anyhow::{Context, Result, anyhow, bail},
     std::{
         env,
         fmt::Write as _,
@@ -55,7 +55,7 @@ fn stubs_for_clippy(out_dir: &Path) -> Result<()> {
 
     let files = [
         "libcomponentize_py_runtime.so.zst",
-        "libpython3.14.so.zst",
+        "libpython3.15.so.zst",
         "libc.so.zst",
         "libwasi-emulated-getpid.so.zst",
         "libwasi-emulated-mman.so.zst",
@@ -95,19 +95,32 @@ fn stubs_for_clippy(out_dir: &Path) -> Result<()> {
 fn package_all_the_things(out_dir: &Path) -> Result<()> {
     let repo_dir = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
 
+    let wasi_env = repo_dir.join("cpython/Tools/wasm/wasi-env");
+    if !wasi_env.exists() {
+        bail!("no such file: {}", wasi_env.display())
+    }
+
     let wasi_sdk =
         PathBuf::from(env::var_os("WASI_SDK_PATH").unwrap_or_else(|| "/opt/wasi-sdk".into()));
 
-    maybe_make_cpython(&repo_dir, &wasi_sdk)?;
+    let clang = wasi_sdk.join(format!("bin/{CLANG_EXECUTABLE}"));
+    if !clang.exists() {
+        bail!("no such file: {}", clang.display())
+    }
+
+    let sysroot_lib = wasi_sdk.join(format!("share/wasi-sysroot/lib/{WASI_TARGET}"));
+    if !sysroot_lib.exists() {
+        bail!("no such directory: {}", sysroot_lib.display())
+    }
+
+    maybe_make_cpython(&repo_dir, &clang, &wasi_env)?;
 
     let cpython_wasi_dir = repo_dir.join("cpython/builddir/wasi");
 
     make_pyo3_config(&repo_dir)?;
 
-    let mut cmd = Command::new("rustup");
+    let mut cmd = Command::new(&wasi_env);
     cmd.current_dir("runtime")
-        .arg("run")
-        .arg("nightly")
         .arg("cargo")
         .arg("build")
         .arg("--package=componentize-py-runtime")
@@ -140,25 +153,20 @@ fn package_all_the_things(out_dir: &Path) -> Result<()> {
     ));
 
     if path.exists() {
-        let clang = wasi_sdk.join(format!("bin/{CLANG_EXECUTABLE}"));
-        if clang.exists() {
-            let name = "libcomponentize_py_runtime.so";
+        let name = "libcomponentize_py_runtime.so";
 
-            run(Command::new(clang)
-                .arg("-shared")
-                .arg("-o")
-                .arg(out_dir.join(name))
-                .arg("-Wl,--whole-archive")
-                .arg(&path)
-                .arg("-Wl,--allow-undefined")
-                .arg("-Wl,--no-whole-archive")
-                .arg(format!("-L{}", cpython_wasi_dir.to_str().unwrap()))
-                .arg("-lpython3.14"))?;
+        run(Command::new(wasi_env)
+            .arg(CLANG_EXECUTABLE)
+            .arg("-shared")
+            .arg("-o")
+            .arg(out_dir.join(name))
+            .arg("-Wl,--whole-archive")
+            .arg(&path)
+            .arg("-Wl,--allow-undefined")
+            .arg("-Wl,--no-whole-archive")
+            .arg(cpython_wasi_dir.join("libpython3.15.so")))?;
 
-            compress(out_dir, name, out_dir, false)?;
-        } else {
-            bail!("no such file: {}", clang.display())
-        }
+        compress(out_dir, name, out_dir, false)?;
     } else {
         bail!("no such file: {}", path.display())
     }
@@ -174,17 +182,12 @@ fn package_all_the_things(out_dir: &Path) -> Result<()> {
     ];
 
     for library in libraries {
-        compress(
-            &wasi_sdk.join("share/wasi-sysroot/lib/wasm32-wasip2"),
-            library,
-            out_dir,
-            true,
-        )?;
+        compress(&sysroot_lib, library, out_dir, true)?;
     }
 
-    compress(&cpython_wasi_dir, "libpython3.14.so", out_dir, true)?;
+    compress(&cpython_wasi_dir, "libpython3.15.so", out_dir, true)?;
 
-    let path = repo_dir.join("cpython/builddir/wasi/install/lib/python3.14");
+    let path = repo_dir.join("cpython/builddir/wasi/install/lib/python3.15");
 
     if path.exists() {
         let mut builder = Builder::new(Encoder::new(
@@ -268,10 +271,10 @@ fn add(builder: &mut Builder<impl Write>, root: &Path, path: &Path) -> Result<()
     Ok(())
 }
 
-fn maybe_make_cpython(repo_dir: &Path, wasi_sdk: &Path) -> Result<()> {
+fn maybe_make_cpython(repo_dir: &Path, clang: &Path, wasi_env: &Path) -> Result<()> {
     let cpython_wasi_dir = repo_dir.join("cpython/builddir/wasi");
-    if !cpython_wasi_dir.join("libpython3.14.so").exists() {
-        if !cpython_wasi_dir.join("libpython3.14.a").exists() {
+    if !cpython_wasi_dir.join("libpython3.15.so").exists() {
+        if !cpython_wasi_dir.join("libpython3.15.a").exists() {
             let cpython_native_dir = repo_dir.join("cpython/builddir/build");
             if !cpython_native_dir.join(PYTHON_EXECUTABLE).exists() {
                 fs::create_dir_all(&cpython_native_dir)?;
@@ -296,23 +299,23 @@ fn maybe_make_cpython(repo_dir: &Path, wasi_sdk: &Path) -> Result<()> {
                     "../../Tools/wasm/wasi/config.site-wasm32-wasi",
                 )
                 .env("CFLAGS", "-fPIC")
+                .env("HOSTRUNNER", "{WASMTIME} --wasm max-wasm-stack=16777216 --dir {HOST_DIR}::{GUEST_DIR} --env {ENV_VAR_NAME}={ENV_VAR_VALUE}")
                 .current_dir(&cpython_wasi_dir)
                 .args([
                     "../../configure",
                     "-C",
-                    "--host=wasm32-unknown-wasip2",
+                    &format!("--host={WASI_TARGET}"),
                     &format!("--build={}", String::from_utf8(config_guess)?),
                     &format!(
                         "--with-build-python={}/../build/{PYTHON_EXECUTABLE}",
                         cpython_wasi_dir.to_str().unwrap()
                     ),
                     &format!("--prefix={}/install", cpython_wasi_dir.to_str().unwrap()),
-                    "--disable-test-modules",
-                    "--disable-wasm-pthreads",
-                    "--enable-ipv6",
                     // "--enable-optimizations",
                     "--enable-shared",
-                    "--enable-wasm-dynamic-linking",
+                    "--disable-ipv6",
+                    "--disable-test-modules",
+                    "--disable-wasm-pthreads",
                 ]))?;
 
             run(Command::new("make")
@@ -320,17 +323,16 @@ fn maybe_make_cpython(repo_dir: &Path, wasi_sdk: &Path) -> Result<()> {
                 .arg("install"))?;
         }
 
-        run(Command::new("../../Tools/wasm/wasi-env")
+        run(Command::new(wasi_env)
             .current_dir(&cpython_wasi_dir)
-            .arg(wasi_sdk.join(format!("bin/{CLANG_EXECUTABLE}")))
+            .arg(clang)
             .arg("-shared")
             .arg("-o")
-            .arg(cpython_wasi_dir.join("libpython3.14.so"))
+            .arg(cpython_wasi_dir.join("libpython3.15.so"))
             .arg("-Wl,--whole-archive")
-            .arg(cpython_wasi_dir.join("libpython3.14.a"))
+            .arg(cpython_wasi_dir.join("libpython3.15.a"))
             .arg("-Wl,--allow-undefined")
             .arg("-Wl,--no-whole-archive")
-            .arg(cpython_wasi_dir.join("Modules/_decimal/libmpdec/libmpdec.a"))
             .arg(cpython_wasi_dir.join("Modules/_hacl/libHacl_Hash_BLAKE2.a"))
             .arg(cpython_wasi_dir.join("Modules/_hacl/libHacl_Hash_MD5.a"))
             .arg(cpython_wasi_dir.join("Modules/_hacl/libHacl_Hash_SHA1.a"))

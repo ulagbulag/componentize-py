@@ -4,8 +4,9 @@ use anyhow::Result;
 
 use crate::Library;
 
-pub fn link_libraries(libraries: &[Library]) -> Result<Vec<u8>> {
+pub fn link_libraries(libraries: &[Library], stack_size: u32) -> Result<Vec<u8>> {
     let mut linker = wit_component::Linker::default()
+        .stack_size(stack_size)
         .validate(true)
         .use_built_in_libdl(true);
 

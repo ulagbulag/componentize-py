@@ -1,7 +1,7 @@
 #![deny(warnings)]
 
 use {
-    anyhow::{anyhow, bail, ensure, Context, Error, Result},
+    anyhow::{Context, Error, Result, anyhow, bail, ensure},
     async_trait::async_trait,
     bytes::Bytes,
     component_init_transform::Invoker,
@@ -18,12 +18,12 @@ use {
     },
     summary::{Escape, Locations, Summary},
     wasmtime::{
-        component::{Component, Instance, Linker, ResourceTable, ResourceType},
         Config, Engine, Store,
+        component::{Component, Instance, Linker, ResourceTable, ResourceType},
     },
     wasmtime_wasi::{
-        p2::pipe::{MemoryInputPipe, MemoryOutputPipe},
         DirPerms, FilePerms, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView,
+        p2::pipe::{MemoryInputPipe, MemoryOutputPipe},
     },
     wasmtime_wasi_http::{WasiHttpCtx, WasiHttpView},
     wasmtime_wasi_io::IoView,
@@ -48,6 +48,15 @@ mod util;
 /// specified WIT world.  This may be overriden programatically or via the CLI
 /// using the `--world-module` option.
 static DEFAULT_WORLD_MODULE: &str = "wit_world";
+
+/// The default size of stack to allocate in the resulting component.
+/// The default value LLVM produces is 1Mi, which is too small to embed python.
+/// The current value is 16Mi, which is the same as the cpython's default one.
+///
+/// Since we cannot include the `pthread` feature to the cpython for now,
+/// we cannot infer the `Py_C_STACK_SIZE` value on the runtime.
+/// NOTE: https://github.com/python/cpython/pull/134469
+const DEFAULT_STACK_SIZE_BYTES: u32 = 16777216; // 16Mi
 
 wasmtime::component::bindgen!({
     path: "wit",
@@ -245,6 +254,7 @@ pub async fn componentize(
     app_name: &str,
     output_path: &Path,
     add_to_linker: Option<&dyn Fn(&mut Linker<Ctx>) -> Result<()>>,
+    stack_size: u32,
     stub_wasi: bool,
     import_interface_names: &HashMap<&str, &str>,
     export_interface_names: &HashMap<&str, &str>,
@@ -347,7 +357,9 @@ pub async fn componentize(
         .iter()
         .any(|&id| app_name == resolve.worlds[id].name.to_snake_case().escape())
     {
-        bail!("App name `{app_name}` conflicts with world name; please rename your application module.");
+        bail!(
+            "App name `{app_name}` conflicts with world name; please rename your application module."
+        );
     }
 
     let summary = Summary::try_new(
@@ -363,10 +375,10 @@ pub async fn componentize(
         dl_openable: false,
     });
 
-    let component = link::link_libraries(&libraries)?;
+    let component = link::link_libraries(&libraries, stack_size)?;
 
     let stubbed_component = if stub_wasi {
-        stubwasi::link_stub_modules(libraries)?
+        stubwasi::link_stub_modules(libraries, stack_size)?
     } else {
         None
     };

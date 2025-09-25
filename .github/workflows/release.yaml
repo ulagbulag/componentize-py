@@ -30,12 +30,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.14"
-
-      - name: Install latest Rust nightly toolchain
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          targets: wasm32-wasip2
+          python-version: "3.13"
 
       - name: Install latest Rust stable toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -134,12 +129,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.14"
-
-      - name: Install latest Rust nightly toolchain
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          targets: ${{ matrix.config.target }}
+          python-version: "3.13"
 
       - name: Install latest Rust stable toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -201,9 +191,7 @@ jobs:
           args: --release --out dist --features pyo3
           manylinux: 2_28
           docker-options: -v /opt/wasi-sdk:/opt/wasi-sdk
-          before-script-linux: |
-            rustup install nightly
-            rustup target add wasm32-wasip2
+          before-script-linux: rustup target add wasm32-wasip2
 
       - name: Set up cross-compiled linux aarch64 build
         if: matrix.config.target == 'aarch64-unknown-linux-gnu'

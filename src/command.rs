@@ -1,4 +1,5 @@
 use {
+    crate::DEFAULT_STACK_SIZE_BYTES,
     anyhow::{Context, Result},
     clap::Parser as _,
     std::{
@@ -117,6 +118,10 @@ pub struct Componentize {
     #[arg(short = 'o', long, default_value = "index.wasm")]
     pub output: PathBuf,
 
+    /// Specify size of stack to allocate in the resulting component
+    #[arg(long, default_value_t = DEFAULT_STACK_SIZE_BYTES)]
+    pub stack_size: u32,
+
     /// If set, replace all WASI imports with trapping stubs.
     ///
     /// PLEASE NOTE: This has the effect of baking whatever PRNG seed is generated at build time into the
@@ -197,6 +202,7 @@ fn componentize(common: Common, componentize: Componentize) -> Result<()> {
         &componentize.app_name,
         &componentize.output,
         None,
+        componentize.stack_size,
         componentize.stub_wasi,
         &common
             .import_interface_name
@@ -455,6 +461,7 @@ class Bindings(bindings.Bindings):
             python_path: vec![out_dir.path().to_string_lossy().into()],
             module_worlds: vec![],
             output: out_dir.path().join("app.wasm"),
+            stack_size: DEFAULT_STACK_SIZE_BYTES,
             stub_wasi: false,
         };
         componentize(common, componentize_opts)

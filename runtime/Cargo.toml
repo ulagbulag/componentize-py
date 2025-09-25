@@ -11,6 +11,6 @@ anyhow = { workspace = true }
 componentize-py-shared = { workspace = true }
 num-bigint = { workspace = true }
 once_cell = { workspace = true }
-pyo3 = { workspace = true, features = ["abi3-py314", "num-bigint"] }
+pyo3 = { workspace = true, features = ["abi3-py313", "num-bigint"] }
 wit-bindgen = { workspace = true, features = ["macros", "realloc"] }
 wit-bindgen-rt = { workspace = true }

@@ -21,15 +21,13 @@ switch.
 ### Prerequisites
 
 - Tools needed to build [CPython](https://github.com/python/cpython) (Make, Clang, etc.)
-- [Rust](https://rustup.rs/) stable 1.82 or later _and_ nightly 2024-10-17 or later, including the `wasm32-wasip2` targets
+- [Rust](https://rustup.rs/) stable 1.87 or later, including the `wasm32-wasip2` targets
 
 For Rust, something like this should work once you have `rustup`:
 
 ```shell
 rustup update
-rustup install nightly
 rustup target add wasm32-wasip2
-rustup target add --toolchain nightly wasm32-wasip2
 ```
 
 ### Building and Running

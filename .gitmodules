@@ -1,3 +1,6 @@
 [submodule "cpython"]
         path = cpython
-        url = https://github.com/python/cpython
+        url = https://github.com/ulagbulag/cpython
+[submodule "wasi-rs"]
+	path = wasi-rs
+	url = https://github.com/bytecodealliance/wasi-rs

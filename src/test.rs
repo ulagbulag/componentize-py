@@ -1,8 +1,8 @@
 #![deny(warnings)]
 
 use {
-    crate::Ctx,
-    anyhow::{anyhow, Result},
+    crate::{Ctx, DEFAULT_STACK_SIZE_BYTES},
+    anyhow::{Result, anyhow},
     once_cell::sync::Lazy,
     proptest::{
         prelude::Strategy,
@@ -11,8 +11,8 @@ use {
     std::{collections::HashMap, env, fs, iter, marker::PhantomData},
     tokio::runtime::Runtime,
     wasmtime::{
-        component::{Component, InstancePre, Linker, ResourceTable},
         Config, Engine, Store,
+        component::{Component, InstancePre, Linker, ResourceTable},
     },
     wasmtime_wasi::{WasiCtx, WasiCtxBuilder},
     wasmtime_wasi_http::WasiHttpCtx,
@@ -78,6 +78,7 @@ async fn make_component(
         "app",
         &tempdir.path().join("app.wasm"),
         add_to_linker,
+        DEFAULT_STACK_SIZE_BYTES,
         false,
         &HashMap::new(),
         &HashMap::new(),
